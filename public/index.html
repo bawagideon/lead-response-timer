@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lead Response Timer & SLA Latency HUD</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 24, 38, 0.8);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-rose: #f43f5e;
+      --accent-amber: #f59e0b;
+      --font-sans: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text-main); font-family: var(--font-sans); padding: 2rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 1.5rem; margin-bottom: 2rem; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+    @media (max-width: 800px) { .kpi-row { grid-template-columns: 1fr 1fr; } }
+    .kpi { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 1.25rem; }
+    .kpi-val { font-size: 1.8rem; font-weight: 800; font-family: var(--font-mono); margin-top: 0.25rem; }
+    .tier-bar { display: flex; height: 32px; border-radius: 8px; overflow: hidden; margin-bottom: 2rem; border: 1px solid var(--card-border); }
+    .bar-seg { display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; }
+    table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 10px; overflow: hidden; border: 1px solid var(--card-border); font-size: 0.85rem; }
+    th, td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--card-border); text-align: left; }
+    th { background: rgba(0,0,0,0.3); color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>⏱️ Lead Response Timer</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Empirical First-Human-Response Latency Telemetry</p>
+      </div>
+      <div>
+        <button style="background: #1e293b; color: #fff; border: 1px solid var(--card-border); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;" onclick="addSimulatedLead()">+ Simulate Inbound Lead</button>
+      </div>
+    </header>
+
+    <div class="kpi-row">
+      <div class="kpi">
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Median Response Time</div>
+        <div class="kpi-val" style="color: var(--accent-amber);" id="kpiMedian">3h 42m</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Target: &lt; 5m</div>
+      </div>
+      <div class="kpi">
+        <div style="font-size: 0.8rem; color: var(--text-muted);">SLA Compliance (&lt;5m)</div>
+        <div class="kpi-val" style="color: var(--accent-rose);" id="kpiComp">14%</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">86% of leads degraded</div>
+      </div>
+      <div class="kpi">
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Total Leads Audited</div>
+        <div class="kpi-val" style="color: var(--accent-cyan);" id="kpiTotal">48</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Last 7 days</div>
+      </div>
+      <div class="kpi">
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Critical Breaches (&gt;2h)</div>
+        <div class="kpi-val" style="color: var(--accent-rose);" id="kpiBreach">22</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Lost buying window</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600;">Response Latency Distribution:</div>
+    <div class="tier-bar">
+      <div class="bar-seg" style="width: 14%; background: #10b981;">0-5m (14%)</div>
+      <div class="bar-seg" style="width: 20%; background: #f59e0b;">5-30m (20%)</div>
+      <div class="bar-seg" style="width: 20%; background: #f97316;">30m-2h (20%)</div>
+      <div class="bar-seg" style="width: 46%; background: #f43f5e;">2h+ Breached (46%)</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Lead ID</th>
+          <th>Source / Contact</th>
+          <th>Received Timestamp</th>
+          <th>First Human Touch</th>
+          <th>Actual Latency</th>
+          <th>SLA Tier</th>
+          <th>Assigned Rep</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr>
+          <td>lead_094</td>
+          <td>Marcus Brody (Quote Request)</td>
+          <td>Oct 05, 14:12:08</td>
+          <td>Oct 05, 17:54:19</td>
+          <td>3h 42m</td>
+          <td><span style="color: #f43f5e; font-weight: bold;">🔴 BREACHED</span></td>
+          <td>Alex K.</td>
+        </tr>
+        <tr>
+          <td>lead_093</td>
+          <td>Elena Fisher (WhatsApp Inquiry)</td>
+          <td>Oct 05, 13:40:12</td>
+          <td>Oct 05, 13:43:02</td>
+          <td>2m 50s</td>
+          <td><span style="color: #10b981; font-weight: bold;">🟢 ELITE</span></td>
+          <td>Sarah M.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    function addSimulatedLead() {
+      const now = new Date().toLocaleTimeString();
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>lead_${Math.floor(Math.random()*900+100)}</td>
+        <td>New Inbound Lead</td>
+        <td>Today, ${now}</td>
+        <td>Waiting...</td>
+        <td>--</td>
+        <td><span style="color: #f59e0b; font-weight: bold;">⏳ COUNTING</span></td>
+        <td>Unassigned</td>
+      `;
+      document.getElementById('tableBody').prepend(tr);
+    }
+  </script>
+</body>
+</html>

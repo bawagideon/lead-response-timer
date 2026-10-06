@@ -1,0 +1,12 @@
+{
+  "name": "@gideon/lead-response-timer",
+  "version": "1.0.0",
+  "description": "Lead Response Timer: High-resolution response latency auditor that tracks lead intake to first human touch, calculates median SLAs, and alerts on decay thresholds.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "node src/index.js"
+  },
+  "author": "Gideon Autonomous Workforce",
+  "license": "MIT"
+}
